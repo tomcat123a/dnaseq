@@ -6,9 +6,13 @@ Created on Thu Jun 20 13:02:05 2019
 """
 
 import torch
-from torch.nn import Conv1d,BatchNorm1d, ModuleList ,Sequential,AdaptiveAvgPool1d,Linear
+from torch.nn import Conv1d,BatchNorm1d, ModuleList ,Sequential,AdaptiveAvgPool1d,Linear,MSELoss,LSTM,GRU
 from torch.nn import  LeakyReLU,ReLU
 import torch.nn as nn
+from torch.utils.data import Dataset,DataLoader
+import pandas as pd
+import time
+import numpy as np
 #generate sequence data
 #generate expression value
 #build models
@@ -177,8 +181,8 @@ class branch0(torch.nn.Module):  #densenet multibranch
         #input in_channels
         #output out_channels ,other dimension does not change
         super(branch0, self).__init__()
-        if int(in_channels/splits)!=in_channels/splits:
-            raise ValueError('in_channels/splits is not an integer!')
+        #if int(in_channels/splits)!=in_channels/splits:
+        #    raise ValueError('in_channels/splits is not an integer!')
         inter_channels=int(in_channels/splits)
         self.cv1=conv1(in_channels,inter_channels)
         self.bn2=BatchNorm1d(inter_channels)
@@ -201,32 +205,44 @@ class branch0(torch.nn.Module):  #densenet multibranch
         #x = self.lin2(x)
         return x
     
-def get_size(x,n):
-     
-    for i in range(n):
-        x =  floor((x-1)/2+1)
-    return int(x )
+
+def shrink(n,m):
+    x = n
+    for i in range(m):
+        if floor(x/2)==x/2:
+            x = x/2
+        else:
+            x = floor(x/2)+1 
+    return int(x)
+shrink(100,3)
 class res(torch.nn.Module):
     
     # Zero-initialize the last BN in each residual branch,
     # so that the residual branch starts with zeros, and each residual block behaves like an identity.
     # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
-    def __init__(self,in_channels,n_layers,n_features,init_ker_size,block_type,depth,zero_init,**kwargs):
+    def __init__(self,in_channels,n_layers,n_features,init_ker_size,block_type,depth,zero_init,degrid=True,tail=True,**kwargs):
         #N input_channels,C channels,L length
         super(res, self).__init__()
         if init_ker_size%2!=1:
             raise ValueError('init_ker_size must be an odd number')
+        if 2**n_layers>n_features:
+            raise ValueError('2**n_layers>n_features')
         self.layer_list=[]
         self.layer_list.append(Conv1d(in_channels, in_channels, kernel_size=init_ker_size, stride=1,
                      padding=int((init_ker_size-1)/2), groups=1, bias=False, dilation=1))
+        factor=1.41
         for i in range(n_layers):
-            self.layer_list.append(layer0(in_channels=2**i*in_channels,out_channels=2**(i+1)*in_channels,block_type=block_type,stride=2,
+            self.layer_list.append(layer0(in_channels=int(factor**i*in_channels),out_channels=int(\
+                                          factor**(i+1)*in_channels),block_type=block_type,stride=2,
                                           depth=depth,dilation=2**i,**kwargs))
-        self.layer_list.append(layer0(in_channels=2**n_layers*in_channels,out_channels=2**n_layers*in_channels,block_type=block_type,stride=1,
-                                          depth=depth,dilation=2**i,res_on=False,**kwargs))
+        if degrid == True:
+            self.layer_list.append(layer0(in_channels=int(factor**n_layers*in_channels),out_channels=int(factor\
+                                          **n_layers*in_channels),block_type=block_type,stride=1,
+                                              depth=depth,dilation=1,res_on=False,**kwargs))
+            
         self.seq=Sequential(*self.layer_list)
         self.avdpool=AdaptiveAvgPool1d(1)
-        self.fc = Linear(2**n_layers*in_channels, 1)
+        self.fc = Linear(int(factor**n_layers*in_channels), 1)
         for m in self.modules():
             if  isinstance(m,   BatchNorm1d ):
                 nn.init.constant_(m.weight, 1)
@@ -237,14 +253,17 @@ class res(torch.nn.Module):
                     nn.init.constant_(m.bn3.weight, 0)
                 elif isinstance(m, branch0):
                     nn.init.constant_(m.bn3.weight, 0)
+        self.tail=tail
     def forward(self, x ):
-        print(x.size())
+        #print(x.size())
         x = self.seq(x)
-        print(x.size())
-        x = self.avdpool(x)
-        print(x.size())
-        x=x.view(x.size()[0],x.size()[1])
-        x = self.fc(x)
+        #print(x.size())
+        if self.tail==True:
+            x = self.avdpool(x)
+            #print(x.size())
+            x=x.view(x.size()[0],x.size()[1])
+            x = self.fc(x)
+        
         #x = self.lin2(x)
         return x
     
@@ -339,22 +358,153 @@ assert lay0(inputa).size()==torch.Size([3,24,5])
 
 inputx=torch.rand(5,4,100)
 mod=res(in_channels=4,n_layers=3,n_features=100,init_ker_size=9,block_type=block0,depth=2,zero_init=False)
-mod(inputx).size()==torch.Size([5,1])
-
+assert mod(inputx).size()==torch.Size([5,1])
+mod=res(in_channels=4,n_layers=0,n_features=100,init_ker_size=9,block_type=block0,depth=2,tail=False,zero_init=False)
+assert mod(inputx).size()==inputx.size()
 mod=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=9,block_type=block1,depth=3,zero_init=False,splits=1)
-mod(inputx).size()==torch.Size([5,1])
-out=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=9,block_type=block1,depth=3,zero_init=False,splits=2)
-mod(inputx).size()==torch.Size([5,1])
-out=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=7,block_type=block0,depth=3,zero_init=True)
-mod(inputx).size()==torch.Size([5,1])
-out=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=7,block_type=block1,depth=2,zero_init=True,splits=1)
-mod(inputx).size()==torch.Size([5,1])
-out=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=5,block_type=block1,depth=2,zero_init=True,splits=2)
-mod(inputx).size()==torch.Size([5,1])
-out=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=9,block_type=block0,depth=3,zero_init=False)
-mod(inputx).size()==torch.Size([5,1])
-out=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=9,block_type=block0,depth=3,zero_init=False)
-mod(inputx).size()==torch.Size([5,1])
+assert mod(inputx).size()==torch.Size([5,1])
+mod=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=9,block_type=block1,depth=3,zero_init=False,splits=2)
+assert mod(inputx).size()==torch.Size([5,1])
+mod=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=7,block_type=block0,depth=3,zero_init=True)
+assert mod(inputx).size()==torch.Size([5,1])
+mod=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=7,block_type=block1,depth=2,zero_init=True,splits=1)
+assert mod(inputx).size()==torch.Size([5,1])
+mod=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=5,block_type=block1,depth=2,zero_init=True,splits=2)
+assert mod(inputx).size()==torch.Size([5,1])
+mod=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=9,block_type=block0,depth=3,zero_init=False)
+assert mod(inputx).size()==torch.Size([5,1])
+mod=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=9,block_type=block0,depth=3,zero_init=False)
+assert mod(inputx).size()==torch.Size([5,1])
+mod=res(in_channels=4,n_layers=1,n_features=4,init_ker_size=3,block_type=block0,depth=1,zero_init=False)
+assert mod(inputx).size()==torch.Size([5,1])
+
+mod=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=5,block_type=block1,depth=2,zero_init=True,degrid=False,splits=2)
+assert mod(inputx).size()==torch.Size([5,1])
+mod=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=9,block_type=block0,depth=3,zero_init=False,degrid=False)
+assert mod(inputx).size()==torch.Size([5,1])
+mod=res(in_channels=4,n_layers=4,n_features=50,init_ker_size=9,block_type=block0,depth=3,zero_init=False,degrid=False)
+assert mod(inputx).size()==torch.Size([5,1])
+mod=res(in_channels=4,n_layers=1,n_features=4,init_ker_size=3,block_type=block0,depth=1,zero_init=False,degrid=False)
+assert mod(inputx).size()==torch.Size([5,1])
+
+mod=res(in_channels=4,n_layers=3,n_features=50,init_ker_size=9,block_type=block0,depth=3,zero_init=False,degrid=False,tail=False)
+assert mod(inputx).size()==torch.Size([5,11,13])
+mod=res(in_channels=4,n_layers=0,n_features=4,init_ker_size=3,block_type=block0,depth=1,zero_init=False,degrid=False,tail=False)
+assert mod(inputx).size()==torch.Size([5,4,100])
+def calc_num_par(x):
+    #calculate the total number of parameters for a pytorch nn.Module
+    pytorch_total_params = sum(p.numel() for p in x.parameters() if p.requires_grad)
+    return  pytorch_total_params
+#data
+class SeqDataset(Dataset):
+    """Face Landmarks dataset."""
+
+    def __init__(self, csv_file_x, csv_file_y,gen=False,n=1000 ):
+        """
+        Args:
+            csv_file (string): Path to the csv file with annotations.
+            root_dir (string): Directory with all the images.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+        """
+        self.gen=gen
+        if gen==False:
+            
+            self.dfx = pd.read_csv(csv_file_x)
+            self.dfy = pd.read_csv(csv_file_y)
+        else:
+            n_seq = 40001
+            n_channels = 4
+            self.dfx=[]
+            self.dfy=[]
+            for i in range(n):
+                x = np.zeros((  n_channels,n_seq ) )
+                J = np.random.choice(n_channels, n_seq)
+                x[J , np.arange(n_seq)] = 1
+                self.dfx.append(x)
+                self.dfy.append(sum(x[0:8,7])+0.5*sum(x[100:108,1])+\
+                                2*sum(x[400:430,2])**2+0.05*sum(x[19900:200100,2:4])**2+0.1*np.random.rand(1))
+
+# assign with advanced indexing
+ 
+         
+
+    def __len__(self):
+        return len(self.dfx)
+
+    def __getitem__(self, idx):
+        if self.gen==False:
+            return self.dfx.iloc[idx,],self.dfy.iloc[idx,]
+        else:
+            return torch.from_numpy(self.dfx[idx]).type(torch.float32),torch.from_numpy(self.dfy[idx]).type(torch.float32)
+        
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')        
+seq=SeqDataset(None,None,True,1000)
+ 
+seqtest=SeqDataset(None,None,True,200)
+params = {'batch_size': 32,
+          'shuffle': True,
+          'pin_memory':True} 
 
 
+train_loader=DataLoader(seq,**params) 
+test_loader=DataLoader(seqtest,batch_size=30,shuffle=False,pin_memory=True)
+model=res(in_channels=4,n_layers=9,n_features=40001,init_ker_size=7,\
+          block_type=block0,depth=2,zero_init=True,degrid=False).to(device)
+optimizer=torch.optim.Adam(model.parameters(), lr=0.0001,amsgrad=True) 
 
+
+train_loss_list=[]
+test_loss_list=[]
+count=0
+maxit=100
+itertime=0
+for count in range(maxit):
+    if count==0:
+        print('batch size{}'.format(params['batch_size']))
+        print('num of pars in model={}'.format(calc_num_par(model)))
+    for data in train_loader:
+        data[0] = data[0].to(device)
+        data[1] = data[1].to(device) 
+        #xdata=data
+        #t_x=data.x.type(torch.float)
+        #t_edge=data.edge_index
+        #t_batch=data.batch
+        #break
+        
+        t0=time.time()
+        optimizer.zero_grad()
+        
+        output=model(data[0])
+            #c_idx = c_index(output,torch.from_numpy(y_train),torch.from_numpy( censor_train))
+        loss = MSELoss(reduction='sum')(output,data[1])#event=0,censored
+        #train_loss_list.append(loss.cpu().data.numpy())
+        t1=time.time()-t0
+        #print('forward takes {}s'.format(t1))
+        train_loss_list.append(loss.cpu().data.numpy())
+        if itertime%100==0:
+            print('train loss = {} at iter {}'.format(train_loss_list[-1],itertime))
+        t0=time.time()
+        loss.backward()
+        t1=time.time()-t0
+        
+        optimizer.step() 
+        itertime+=1
+        #print('backward takes {}s'.format(t1))
+     
+
+total_test_loss=0
+total_r2=0
+total_cor=0
+for data in test_loader:
+    data[0] = data[0].to(device)
+    data[1] = data[1].to(device) 
+    output = model(data[0])
+    total_cor = np.corrcoef(output.cpu().data.numpy().reshape(-1),data[1].cpu().data.numpy().reshape(-1))[0,1]
+    loss = MSELoss(reduction='sum')(output,data[1]) 
+    total_test_loss+=loss.cpu().data.numpy()
+    total_r2+=data[1].var()*(data[1].size()[0]-1)
+ 
+ratio = total_test_loss/total_r2
+    
+print('final R square = {}, corrcoef = {}'.format(ratio,total_cor))
