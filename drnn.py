@@ -155,58 +155,5 @@ class biDRNN(nn.Module):
 
 
 
-class testrnn(torch.nn.Module):
-    
-    # Zero-initialize the last BN in each residual branch,
-    # so that the residual branch starts with zeros, and each residual block behaves like an identity.
-    # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
-    def __init__(self,in_channels,hidden_size,n_layers,n_features,cell_type,prelayer,n_pre):
-        #N input_channels,C channels,L length
-        super(testrnn, self).__init__()
-        factor=1.41
-        self.cell_type=cell_type
-        
-        if cell_type=='LSTM':
-            self.rnn=LSTM(input_size=int(in_channels*factor**(n_pre)),hidden_size=hidden_size,num_layers=n_layers,bidirectional=True,batch_first=True)
-        if cell_type=='GRU':
-            self.rnn = GRU(input_size=int(in_channels*factor**(n_pre)),hidden_size=hidden_size,num_layers=n_layers,bidirectional=True,batch_first=True)
-        if cell_type=='biDRNN':
-            self.rnn = biDRNN(n_input=int(in_channels*factor**(n_pre)),n_hidden=hidden_size,n_layers=n_layers ,cell_type='LSTM', batch_first=True)
-        if prelayer is None:
-            init_ker_size = 7
-            self.cn1=Conv1d(in_channels, in_channels, kernel_size=init_ker_size, stride=1,
-                         padding=int((init_ker_size-1)/2), groups=1, bias=False, dilation=1)
-            self.bn1=BatchNorm1d(in_channels)
-            self.ac1=ReLU()
-            self.prelayer=Sequential(*[self.cn1,self.bn1, self.ac1])
-        else:
-            self.prelayer=prelayer
-        self.avdpool_cnn=AdaptiveAvgPool1d(1)
-        self.fc_cnn = Linear(int(factor**n_pre*in_channels), 1)
-        self.avdpool_rnn=AdaptiveAvgPool1d(1)
-        self.fc_rnn = Linear( 2*hidden_size, 1)
-    def forward(self, x , rnn=True ):
-        x = self.prelayer(x)
-         
-        x1 = self.avdpool_cnn(x)
-        x1 = x1.squeeze(dim=-1)
-        x1 = self.fc_cnn(x1)
-        
-        if rnn==True:
-            #(N,C,L) to (N,L,C)
-            x = x.transpose(1,2)
-            #since rnn is batch first
-            if self.cell_type!='biDRNN':
-                x = self.rnn(x)[0] 
-            else:
-                x = self.rnn(x)
-            x = x.transpose(1,2)
-            x = self.avdpool_rnn(x)
-            x = x.squeeze(dim=-1)
-            x = self.fc_rnn(x)
-        #x = self.lin2(x)
-            return x+x1
-        else:
-            return x1
-        
+
         
