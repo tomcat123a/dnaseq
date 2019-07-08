@@ -6,7 +6,7 @@ Created on Thu Jun 20 13:02:05 2019
 """
 
 import torch
-from seq import branch0,block0,block1,res,layer0,calc_num_par,SeqDataset,testrnn
+from seq import branch0,block0,block1,res,layer0,calc_num_par,SeqDataset,testcnn
 from torch.utils.data import Dataset,DataLoader
 from torch.nn import MSELoss
 import time
@@ -29,53 +29,15 @@ train_loader=DataLoader(seq,**params)
 test_loader=DataLoader(seqtest,batch_size=30,shuffle=False,pin_memory=True)
 #model=res(in_channels=4,n_layers=9,n_features=40001,init_ker_size=7,\
 #          block_type=block0,depth=2,zero_init=True,degrid=False).to(device)
+ 
 cnn_para_list=\
-[{'in_channels':4,'n_layers':3,'n_features':40001,'init_ker_size':7,'block_type':block0,\
- 'depth':2,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':3,'n_features':40001,'init_ker_size':7,'block_type':block0,\
- 'depth':3,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':4,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':4,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':3,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':5,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':5,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':3,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':6,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':6,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':3,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':7,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':7,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':3,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':8,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':8,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':3,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':9,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':9,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':3,'zero_init':True,'degrid':True,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':5,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':True,'tail':False,'testrnn':True},\
-{'in_channels':4,'n_layers':7,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':True,'tail':False,'testrnn':True},\
-{'in_channels':4,'n_layers':9,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':True,'tail':False,'testrnn':True},\
-{'in_channels':4,'n_layers':5,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':False,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':7,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':False,'tail':False,'testrnn':False},\
-{'in_channels':4,'n_layers':9,'n_features':40001,'init_ker_size':7,'block_type':block0,\
-'depth':2,'zero_init':True,'degrid':False,'tail':False,'testrnn':False}]
+[{'in_channels':4,'n_layers':3,'n_features':40001,'depth':7,'block_type':block0,\
+ 'degrid':True,'testrnn':False,'cell_type':'biDRNN','hidden_size':10,'n_layers_rnn':3 }]
 #0-13 0,2,4,6,8,10,12 depth=2,1,3,5,7,9,11,13,depth=3,degrid=True,n_layers=3,4,5,6,7,8,9,testrnn=False
 #14,15,16,n_layers=5,7,9,depth=2,testrnn=True
 #17,18,19,n_layers=5,7,9,depth=2,testrnn=False,degrid=False
 for ID in range(20):
-    model=testrnn(in_channels=4,hidden_size=20,n_layers=3,n_features=40001,cell_type='biDRNN',prelayer=res(in_channels=4,n_layers=5,n_features=40001,init_ker_size=7,\
-              block_type=block0,depth=2,zero_init=True,degrid=False,tail=False),n_pre=5,testrnn=False)
+    model=testcnn(**cnn_para_list[ID])
     
     optimizer=torch.optim.Adam(model.parameters(), lr=0.01,amsgrad=True) 
     
