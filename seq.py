@@ -293,7 +293,7 @@ class testcnn(torch.nn.Module):
     # Zero-initialize the last BN in each residual branch,
     # so that the residual branch starts with zeros, and each residual block behaves like an identity.
     # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
-    def __init__(self,in_channels,n_layers,n_features,depth,block_type,degrid,cell_type,testrnn,hidden_size,n_layers_rnn):
+    def __init__(self,in_channels,n_layers,n_features,depth,block_type,degrid,testrnn,cell_type,hidden_size,n_layers_rnn):
         #N input_channels,C channels,L length
         super(testcnn, self).__init__()
         factor=1.41
