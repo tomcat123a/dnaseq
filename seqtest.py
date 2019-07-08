@@ -5,7 +5,7 @@ Created on Sun Jul  7 17:29:59 2019
 @author: Administrator
 """
 import torch
-from seq import branch0,block0,block1,res,layer0
+from seq import branch0,block0,block1,res,layer0,testcnn
     
 #test file size test
 inputa=torch.rand(3,12,10)
@@ -96,7 +96,7 @@ lay0=layer0(in_channels=12,out_channels=24,block_type=block1,depth=3,dilation=[2
 assert lay0(inputa).size()==torch.Size([3,24,5]) 
 #test res
 
-inputx=torch.rand(5,4,100)
+inputx=torch.rand(5,4,100)#ncl
 mod=res(in_channels=4,n_layers=3,n_features=100,init_ker_size=9,block_type=block0,depth=2,zero_init=False)
 assert mod(inputx).size()==torch.Size([5,1])
 mod=res(in_channels=4,n_layers=0,n_features=100,init_ker_size=9,block_type=block0,depth=2,tail=False,zero_init=False)
@@ -131,3 +131,50 @@ mod=res(in_channels=4,n_layers=3,n_features=50,init_ker_size=9,block_type=block0
 assert mod(inputx).size()==torch.Size([5,11,13])
 mod=res(in_channels=4,n_layers=0,n_features=4,init_ker_size=3,block_type=block0,depth=1,zero_init=False,degrid=False,tail=False)
 assert mod(inputx).size()==torch.Size([5,4,100])
+from seq import testcnn
+mod=testcnn(in_channels=4,n_layers=2,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
+            testrnn=False,hidden_size=10,n_layers_rnn=2)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+mod=testcnn(in_channels=4,n_layers=2,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
+            testrnn=True,hidden_size=10,n_layers_rnn=2)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+mod=testcnn(in_channels=4,n_layers=9,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
+            testrnn=False,hidden_size=10,n_layers_rnn=2)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+mod=testcnn(in_channels=4,n_layers=9,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
+            testrnn=True,hidden_size=10,n_layers_rnn=2)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+mod=testcnn(in_channels=4,n_layers=5,n_features=40001,block_type=block0,depth=3,degrid=False,cell_type='biDRNN',\
+            testrnn=False,hidden_size=20,n_layers_rnn=4)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+mod=testcnn(in_channels=4,n_layers=5,n_features=40001,block_type=block0,depth=3,degrid=False,cell_type='biDRNN',\
+            testrnn=False,hidden_size=20,n_layers_rnn=4)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+mod=testcnn(in_channels=4,n_layers=6,n_features=40001,block_type=block0,depth=2,degrid=True,cell_type='biDRNN',\
+            testrnn=False,hidden_size=10,n_layers_rnn=2)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+mod=testcnn(in_channels=4,n_layers=6,n_features=40001,block_type=block0,depth=2,degrid=True,cell_type='biDRNN',\
+            testrnn=False,hidden_size=10,n_layers_rnn=2)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+mod=testcnn(in_channels=4,n_layers=2,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='GRU',\
+            testrnn=False,hidden_size=10,n_layers_rnn=2)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+mod=testcnn(in_channels=4,n_layers=2,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='GRU',\
+            testrnn=False,hidden_size=10,n_layers_rnn=2)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+inputx=torch.rand(5,4,40000)
+
+mod=testcnn(in_channels=4,n_layers=3,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='LSTM',\
+            testrnn=False,hidden_size=20,n_layers_rnn=4)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
