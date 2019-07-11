@@ -15,7 +15,8 @@ import pandas as pd
 import time
 import numpy as np
 from drnn import DRNN 
-
+import parsedna
+import os
 from torch.utils.data import Dataset
 #generate sequence data
 #generate expression value
@@ -346,27 +347,62 @@ class testcnn(torch.nn.Module):
             return int(x)  
         
 class SeqDataset(Dataset):
-    """Face Landmarks dataset."""
+    """return both the training and test dataset."""
 
-    def __init__(self, csv_file_x, csv_file_y,gen=False,n=1000 ):
+    def __init__(self,  tissue , exp_type , gen=False,np,n_train_gene_rate=0.6 ):
         """
         Args:
-            csv_file (string): Path to the csv file with annotations.
-            root_dir (string): Directory with all the images.
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
+            tissue:values:0,1,2,3, ('Breast_Mammary_Tissue','Muscle_Skeletal','Ovary','Whole_Blood')
+            exp_type:values: 0,1,2, 
+            np (float) : percentage of number of patients selected.
+            n_train_gene_rate(float): ratio of the genes that are in the training data set, the 
+            #rest are in the test data set.
+            #seq folder '/home/yilun/dna/seqdata/chr8'
+            #read seq data a = pd.read_csv('patient_id.txt',sep='\t') a.iloc[i,1] the first column at row i,
+            #a.iloc[i,2] the second column at row i,a.iloc[:,0] is the gene-name list.
+            #exp_folder '/home/yilun/dna/exp_nor_rbe/','NORM_RM.txt',
+            #'/home/yilun/dna/exp_unnor_rbe/' ,'UNNORM_RM.txt', '/home/yilun/dna/exp_raw/','RAW.txt'
+            #read expdata b = pd.read_csv('name.txt',sep='\t') b.iloc[i,0] is the expression value for
+            first patient at gene i,
+             b.index is the gene-name list,which is the same as a.iloc[:,0].b.columns is the list
+             patient_id. The patients in this list will be fetched for the corresponding dna sequence in
+             seq folder
         """
         self.gen=gen
         if gen==False:
-            
-            self.dfx = pd.read_csv(csv_file_x)
-            self.dfy = pd.read_csv(csv_file_y)
+            #os.listdir() files for seq
+            if ( not (tissue in [0,1,2,3] ) ) or ( not (exp_type in [0,1,2]) ) or (not (np<=1 and np>=0)):
+                raise ValueError( 'argument tissue in [0,1,2,3] and \
+                                 exp_type in [0,1,2] and np<=1 and np>=0 does not hold!')
+            TISSUE=['Breast_Mammary_Tissue','Muscle_Skeletal','Ovary','Whole_Blood']
+            EXP_FOLDER=['/home/yilun/dna/exp_nor_rbe/','/home/yilun/dna/exp_unnor_rbe/','/home/yilun/dna/exp_raw/']
+            EXP_TXT_NAME=['/NORM_RM.txt','/UNNORM_RM.txt','/RAW.txt']
+            exp_folder_dir=EXP_FOLDER[exp_type]+TISSUE[tissue]+EXP_TXT_NAME[exp_type]
+            exp_table=pd.read_csv(exp_folder_dir,sep='\t') 
+            seq_folder='/home/yilun/dna/seqdata/chr8/'
+            total_num_patients=exp_table.shape[1]
+            selected_patient_id=np.random.choice(range(total_num_patients),int(total_num_patients*np),replace=False)
+            patient_list=np.take(list(exp_table.columns),selected_patient_id)
+            total_num_genes = exp_table.shape[0]
+            num_train_gene=int(total_num_genes*n_train_gene_rate)
+            train_gene_idx=np.random.choice(range(total_num_genes),num_train_gene,replace=False)
+            test_gene_idx=np.setdiff1d(list(range(total_num_genes)),train_gene_idx)
+            #fetch the corresponding sequence
+            self.train=[]
+            self.test=[]
+            for pt_id in patient_list:
+                x =  pd.read_csv(seq_folder+pt_id+'.txt').iloc[:,1:]#two columns of strings
+                self.train.append(parsedna(x,train_gene_idx,)) #output size len(idx),4,seq_len
+                self.test.append(parsedna(x,test_gene_idx,))
+            self.train=torch.cat(self.train,dim=0)#batch size,4,seq_len
+            self.test=torch.cat(self.test,dim=0)#batch size,4,seq_len
+            self.dfy =  pd.read_csv(csv_file_y).iloc[:,1:].values.take(patient_list,axis=1)
         else:
             n_seq = 40001
             n_channels = 4
             self.dfx=[]
             self.dfy=[]
-            for i in range(n):
+            for i in range(1000*np):
                 x = np.zeros((  n_channels,n_seq ) )
                 J = np.random.choice(n_channels, n_seq)
                 x[J , np.arange(n_seq)] = 1
@@ -383,7 +419,7 @@ class SeqDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.gen==False:
-            return self.dfx.iloc[idx,],self.dfy.iloc[idx,]
+            return self.dfx[idx,],self.dfy.[idx]
         else:
             return torch.from_numpy(self.dfx[idx]).type(torch.float32),torch.from_numpy(self.dfy[idx]).type(torch.float32)
      
