@@ -274,10 +274,10 @@ class res(torch.nn.Module):
  
 
 class biDRNN(nn.Module):
-    def __init__(self, n_input, n_hidden, n_layers , dropout=0, cell_type='GRU', batch_first=False):
+    def __init__(self, n_input, n_hidden, n_layers , dropout=0, cell_type='GRU', batch_first=False,rnn_gpu=False):
         super(biDRNN, self).__init__()
-        self.drnn1=DRNN(n_input, n_hidden, n_layers , dropout=0, cell_type=cell_type, batch_first=False)
-        self.drnn2=DRNN(n_input, n_hidden, n_layers , dropout=0, cell_type=cell_type, batch_first=False)
+        self.drnn1=DRNN(n_input, n_hidden, n_layers , dropout=0, cell_type=cell_type, batch_first=False,rnn_gpu=rnn_gpu)
+        self.drnn2=DRNN(n_input, n_hidden, n_layers , dropout=0, cell_type=cell_type, batch_first=False,rnn_gpu=rnn_gpu)
         
     def forward(self,input1):
         #input1 is (N,L,C) N batch size ,L seq length, C #channels
@@ -294,7 +294,7 @@ class testcnn(torch.nn.Module):
     # Zero-initialize the last BN in each residual branch,
     # so that the residual branch starts with zeros, and each residual block behaves like an identity.
     # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
-    def __init__(self,in_channels,n_layers,n_features,depth,block_type,degrid,testrnn,cell_type,hidden_size,n_layers_rnn):
+    def __init__(self,in_channels,n_layers,n_features,depth,block_type,degrid,testrnn,cell_type,hidden_size,n_layers_rnn,rnn_gpu):
         #N input_channels,C channels,L length
         super(testcnn, self).__init__()
         factor=1.41
@@ -302,12 +302,14 @@ class testcnn(torch.nn.Module):
         self.cell_type=cell_type
         cnn_output_channels=int(in_channels*factor**(n_layers))
         cnn_output_len=int(self.shrink(n_features,n_layers))
+        self.cnn_output_len = cnn_output_len
+         
         if cell_type=='LSTM':
             self.rnn=LSTM(input_size=cnn_output_channels,hidden_size=hidden_size,num_layers=n_layers_rnn,bidirectional=True,batch_first=True)
         if cell_type=='GRU':
             self.rnn = GRU(input_size=cnn_output_channels,hidden_size=hidden_size,num_layers=n_layers_rnn,bidirectional=True,batch_first=True)
         if cell_type=='biDRNN':
-            self.rnn = biDRNN(n_input=cnn_output_channels,n_hidden=hidden_size,n_layers=n_layers_rnn ,cell_type='GRU', batch_first=True)
+            self.rnn = biDRNN(n_input=cnn_output_channels,n_hidden=hidden_size,n_layers=n_layers_rnn ,cell_type='GRU', batch_first=True,rnn_gpu= rnn_gpu)
         self.prelayer=res(in_channels=in_channels,n_layers=n_layers,n_features=n_features,init_ker_size=7,\
               block_type=block_type,depth=depth,zero_init=True,degrid=degrid,tail=False)
         self.avdpool_cnn=AdaptiveAvgPool1d(1)
@@ -330,6 +332,7 @@ class testcnn(torch.nn.Module):
             else:
                 x = self.rnn(x)
             x = x.transpose(1,2)
+             
             x = self.timedistributed_rnn(x)
             x = x.squeeze(dim=-1)
             x = self.fc_rnn(x)
@@ -344,7 +347,7 @@ class testcnn(torch.nn.Module):
                 x = x/2
             else:
                 x = np.floor(x/2)+1 
-            return int(x)  
+        return int(x)  
         
 class SeqDataset(Dataset):
     """return both the training and test dataset."""
