@@ -141,6 +141,17 @@ mod(inputx).size()==torch.Size([inputx.size()[0],1])
 mod=testcnn(in_channels=4,n_layers=2,n_features=100,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
             testrnn=True,hidden_size=10,n_layers_rnn=2,rnn_gpu=False)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+mod=testcnn(in_channels=4,n_layers=2,n_features=100,block_type=block1,depth=2,degrid=False,cell_type='biDRNN',\
+            testrnn=False,hidden_size=10,n_layers_rnn=2,rnn_gpu=False,splits=2)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+mod=testcnn(in_channels=4,n_layers=2,n_features=100,block_type=block1,depth=2,degrid=False,cell_type='biDRNN',\
+            testrnn=True,hidden_size=10,n_layers_rnn=2,rnn_gpu=False,splits=2)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+
+
+
 inputx=torch.rand(5,4,40001)
 mod=testcnn(in_channels=4,n_layers=9,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
             testrnn=False,hidden_size=10,n_layers_rnn=2,rnn_gpu=False)
@@ -176,12 +187,12 @@ mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
 
 
-mod=testcnn(in_channels=4,n_layers=3,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='LSTM',\
-            testrnn=False,hidden_size=20,n_layers_rnn=4,rnn_gpu=False)
+mod=testcnn(in_channels=4,n_layers=3,n_features=40001,block_type=block1,depth=2,degrid=False,cell_type='LSTM',\
+            testrnn=False,hidden_size=20,n_layers_rnn=4,rnn_gpu=False,splits=4)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
-mod=testcnn(in_channels=4,n_layers=8,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='LSTM',\
-            testrnn=True,hidden_size=20,n_layers_rnn=4,rnn_gpu=False)
+mod=testcnn(in_channels=4,n_layers=8,n_features=40001,block_type=block1,depth=2,degrid=False,cell_type='LSTM',\
+            testrnn=True,hidden_size=20,n_layers_rnn=4,rnn_gpu=False,splits=4)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 print('basic test done')
 import time
@@ -221,8 +232,11 @@ def testfunc(mod,dt=dt,device=None):
     torch.pow(a.sum(),2).backward()
     print('backward time={}'.format(time.time()-t0))
     
-
-    
+'''
+mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block1,depth=2,degrid=False,cell_type='biDRNN',\
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=False,splits=2)
+testfunc(mod) 
+'''
     
 mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
             testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=False)
@@ -252,6 +266,13 @@ mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block0,depth=3
             testrnn=True,hidden_size=10,n_layers_rnn=3,rnn_gpu=False)
 testfunc(mod) 
 
+mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block1,depth=2,degrid=True,cell_type='biDRNN',\
+            testrnn=True,hidden_size=10,n_layers_rnn=3,rnn_gpu=False,splits=2)
+testfunc(mod) 
+
+mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block1,depth=3,degrid=True,cell_type='biDRNN',\
+            testrnn=True,hidden_size=10,n_layers_rnn=3,rnn_gpu=False,splits=2)
+testfunc(mod) 
 print('cpu version test finished')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
