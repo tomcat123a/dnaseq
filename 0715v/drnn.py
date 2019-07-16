@@ -10,18 +10,18 @@ import torch.nn as nn
 from torch.nn import AdaptiveAvgPool1d,Linear,BatchNorm1d,Conv1d
 
 
-use_cuda = torch.cuda.is_available()
-
+#use_cuda = torch.cuda.is_available()
+#use_cuda = False
 
 class DRNN(nn.Module):
 
-    def __init__(self, n_input, n_hidden, n_layers , dropout=0, cell_type='GRU', batch_first=False):
+    def __init__(self, n_input, n_hidden, n_layers , dropout=0, cell_type='GRU', batch_first=False,rnn_gpu=False):
         super(DRNN, self).__init__()
 
         self.dilations = [2 ** i for i in range(n_layers)]
         self.cell_type = cell_type
         self.batch_first = batch_first
-
+        self.use_cuda=rnn_gpu
         layers = []
         if self.cell_type == "GRU":
             cell = nn.GRU
@@ -111,7 +111,7 @@ class DRNN(nn.Module):
             zeros_ = torch.zeros(dilated_steps * rate - inputs.size(0),
                                  inputs.size(1),
                                  inputs.size(2))
-            if use_cuda:
+            if self.use_cuda:
                 zeros_ = zeros_.cuda()
 
             inputs = torch.cat((inputs, zeros_))
@@ -126,11 +126,11 @@ class DRNN(nn.Module):
 
     def init_hidden(self, batch_size, hidden_dim):
         hidden = torch.zeros(batch_size, hidden_dim)
-        if use_cuda:
+        if self.use_cuda:
             hidden = hidden.cuda()
         if self.cell_type == "LSTM":
             memory = torch.zeros(batch_size, hidden_dim)
-            if use_cuda:
+            if self.use_cuda:
                 memory = memory.cuda()
             return (hidden, memory)
         else:
@@ -138,7 +138,7 @@ class DRNN(nn.Module):
         
         
 
-
+'''
 class biDRNN(nn.Module):
     def __init__(self, n_input, n_hidden, n_layers , dropout=0, cell_type='GRU', batch_first=False):
         super(biDRNN, self).__init__()
@@ -153,7 +153,7 @@ class biDRNN(nn.Module):
          
         return torch.cat([out1,out2],dim=-1)
 
-
+'''
 
 
         
