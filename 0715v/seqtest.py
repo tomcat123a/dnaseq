@@ -133,68 +133,73 @@ assert mod(inputx).size()==torch.Size([5,11,13])
 mod=res(in_channels=4,n_layers=0,n_features=4,init_ker_size=3,block_type=block0,depth=1,zero_init=False,degrid=False,tail=False)
 assert mod(inputx).size()==torch.Size([5,4,100])
 
-mod=testcnn(in_channels=4,n_layers=2,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=2)
+inputx=torch.rand(5,4,100)
+mod=testcnn(in_channels=4,n_layers=2,n_features=100,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
+            testrnn=False,hidden_size=10,n_layers_rnn=2,rnn_gpu=False)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
-mod=testcnn(in_channels=4,n_layers=2,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
-            testrnn=True,hidden_size=10,n_layers_rnn=2)
+mod=testcnn(in_channels=4,n_layers=2,n_features=100,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
+            testrnn=True,hidden_size=10,n_layers_rnn=2,rnn_gpu=False)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+inputx=torch.rand(5,4,40001)
+mod=testcnn(in_channels=4,n_layers=9,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
+            testrnn=False,hidden_size=10,n_layers_rnn=2,rnn_gpu=False)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
 mod=testcnn(in_channels=4,n_layers=9,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=2)
-mod(inputx).size()==torch.Size([inputx.size()[0],1])
-
-mod=testcnn(in_channels=4,n_layers=9,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
-            testrnn=True,hidden_size=10,n_layers_rnn=2)
+            testrnn=True,hidden_size=10,n_layers_rnn=2,rnn_gpu=False)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
 mod=testcnn(in_channels=4,n_layers=5,n_features=40001,block_type=block0,depth=3,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=20,n_layers_rnn=4)
+            testrnn=False,hidden_size=20,n_layers_rnn=4,rnn_gpu=False)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
 mod=testcnn(in_channels=4,n_layers=5,n_features=40001,block_type=block0,depth=3,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=20,n_layers_rnn=4)
+            testrnn=False,hidden_size=20,n_layers_rnn=4,rnn_gpu=False)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
 mod=testcnn(in_channels=4,n_layers=6,n_features=40001,block_type=block0,depth=2,degrid=True,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=2)
+            testrnn=False,hidden_size=10,n_layers_rnn=2,rnn_gpu=False)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
 mod=testcnn(in_channels=4,n_layers=6,n_features=40001,block_type=block0,depth=2,degrid=True,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=2)
+            testrnn=False,hidden_size=10,n_layers_rnn=2,rnn_gpu=False)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
 mod=testcnn(in_channels=4,n_layers=2,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='GRU',\
-            testrnn=False,hidden_size=10,n_layers_rnn=2)
+            testrnn=False,hidden_size=10,n_layers_rnn=2,rnn_gpu=False)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
-mod=testcnn(in_channels=4,n_layers=2,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='GRU',\
-            testrnn=False,hidden_size=10,n_layers_rnn=2)
+mod=testcnn(in_channels=4,n_layers=2,n_features=100,block_type=block0,depth=2,degrid=False,cell_type='GRU',\
+            testrnn=False,hidden_size=10,n_layers_rnn=2,rnn_gpu=False)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
-inputx=torch.rand(5,4,40000)
+
 
 mod=testcnn(in_channels=4,n_layers=3,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='LSTM',\
-            testrnn=False,hidden_size=20,n_layers_rnn=4)
+            testrnn=False,hidden_size=20,n_layers_rnn=4,rnn_gpu=False)
 mod(inputx).size()==torch.Size([inputx.size()[0],1])
 
+mod=testcnn(in_channels=4,n_layers=8,n_features=40001,block_type=block0,depth=2,degrid=False,cell_type='LSTM',\
+            testrnn=True,hidden_size=20,n_layers_rnn=4,rnn_gpu=False)
+mod(inputx).size()==torch.Size([inputx.size()[0],1])
+print('basic test done')
 import time
 t0=time.time()
 
 seq=SeqDataset(tissue=0,exp_type=0,gen=False,chrom=6,pt_per=0,\
-selected_patient_id=list(range(10)),len_per=1,seq_folder='/home/yilun/dna/seqdata/')
+selected_patient_id=list(range(1)),len_per=1,seq_folder='/home/yilun/dna/seqdata/')
  
 seqtest=SeqDataset(tissue=0,exp_type=0,gen=False,chrom=8,pt_per=0,\
-selected_patient_id=list(range(10)),len_per=1,seq_folder='/home/yilun/dna/seqdata/')
-params = {'batch_size': 16,
+selected_patient_id=list(range(1)),len_per=1,seq_folder='/home/yilun/dna/seqdata/')
+params = {'batch_size': 4,
           'shuffle': True,
           'pin_memory':True} 
 
 
         
 train_loader=DataLoader(seq,**params) 
-test_loader=DataLoader(seqtest,batch_size=16,shuffle=True,pin_memory=True)
+test_loader=DataLoader(seqtest,**params)
  
 
 print('loading genes from one patient takes {}s'.format(time.time()-t0))
@@ -220,58 +225,60 @@ def testfunc(mod,dt=dt,device=None):
     
     
 mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=False)
 testfunc(mod) 
 mod=testcnn(in_channels=4,n_layers=9,n_features=100001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=False)
 testfunc(mod) 
 mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block0,depth=3,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=False)
 testfunc(mod) 
 mod=testcnn(in_channels=4,n_layers=9,n_features=100001,block_type=block0,depth=3,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=False)
 testfunc(mod) 
 mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block0,depth=3,degrid=True,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=False)
 testfunc(mod) 
 
 mod=testcnn(in_channels=4,n_layers=9,n_features=100001,block_type=block0,depth=3,degrid=True,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=False)
 testfunc(mod) 
+
 mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block0,depth=2,degrid=True,cell_type='biDRNN',\
-            testrnn=True,hidden_size=10,n_layers_rnn=3)
+            testrnn=True,hidden_size=10,n_layers_rnn=3,rnn_gpu=False)
 testfunc(mod) 
 
 mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block0,depth=3,degrid=True,cell_type='biDRNN',\
-            testrnn=True,hidden_size=10,n_layers_rnn=3)
+            testrnn=True,hidden_size=10,n_layers_rnn=3,rnn_gpu=False)
 testfunc(mod) 
 
+print('cpu version test finished')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=True)
 
 testfunc(mod,device=device) 
 mod=testcnn(in_channels=4,n_layers=9,n_features=100001,block_type=block0,depth=2,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=True)
 testfunc(mod,device=device) 
 mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block0,depth=3,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=True)
 testfunc(mod,device=device) 
 mod=testcnn(in_channels=4,n_layers=9,n_features=100001,block_type=block0,depth=3,degrid=False,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=True)
 testfunc(mod,device=device) 
 mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block0,depth=3,degrid=True,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=True)
 testfunc(mod,device=device) 
 
 mod=testcnn(in_channels=4,n_layers=9,n_features=100001,block_type=block0,depth=3,degrid=True,cell_type='biDRNN',\
-            testrnn=False,hidden_size=10,n_layers_rnn=4)
+            testrnn=False,hidden_size=10,n_layers_rnn=4,rnn_gpu=True)
 testfunc(mod,device=device) 
 mod=testcnn(in_channels=4,n_layers=5,n_features=100001,block_type=block0,depth=2,degrid=True,cell_type='biDRNN',\
-            testrnn=True,hidden_size=10,n_layers_rnn=3)
+            testrnn=True,hidden_size=10,n_layers_rnn=3,rnn_gpu=True)
 testfunc(mod,device=device) 
 
 mod=testcnn(in_channels=4,n_layers=9,n_features=100001,block_type=block0,depth=3,degrid=True,cell_type='biDRNN',\
-            testrnn=True,hidden_size=10,n_layers_rnn=3)
+            testrnn=True,hidden_size=10,n_layers_rnn=3,rnn_gpu=True)
 testfunc(mod,device=device) 
