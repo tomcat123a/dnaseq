@@ -8,10 +8,8 @@ Created on Mon Jul  8 15:55:33 2019
 import pandas as pd
 import re
 import torch
-import numpy as np
 
 #type of [1,0,0,0] or [0,0,0,0] must be float
-
 mydic={"A" : [1., 0, 0, 0],
   "T" : [0., 1, 0, 0],
   "C" : [.0, 0, 1, 0],
@@ -33,9 +31,9 @@ mydic={"A" : [1., 0, 0, 0],
 def chartoidx(x,str0):
      
     for name,vec in mydic.items():
-        print(name)
-        idx= np.where(str0==name)
-        print(idx)
+        #print(name)
+        idx=[i.start() for i in re.finditer(name,str0)]
+        
         x[:,idx]=torch.unsqueeze(torch.tensor(mydic[name]),1).expand(4,len(idx))
     return x
     
@@ -68,11 +66,11 @@ per=0.8
    
 assert totensor(p3,per).size()==torch.Size([p3.shape[0], 4, 1+2*int(per*(len(p3.iloc[0,0])-1)/2)])
 
-'''
+ 
     #input two columns of strings dtype.pandas df
 ao=torch.zeros(4,10)
 ao.expand(torch.zeros(4,20).size())
 torch.unsqueeze(ao,2).size()
 chartoidx(ao,'ATCGB.A.A.').transpose(0,1)
     
- 
+ '''
