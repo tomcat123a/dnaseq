@@ -186,8 +186,8 @@ class branch0(torch.nn.Module):  #densenet multibranch
         #input in_channels
         #output out_channels ,other dimension does not change
         super(branch0, self).__init__()
-        #if int(in_channels/splits)!=in_channels/splits:
-        #    raise ValueError('in_channels/splits is not an integer!')
+        if int(in_channels/splits)<=2:
+            raise ValueError('in_channels/splits should be at least 3 ')
         inter_channels=int(in_channels/splits)
         self.cv1=conv1(in_channels,inter_channels)
         self.bn2=BatchNorm1d(inter_channels)
@@ -294,7 +294,7 @@ class testcnn(torch.nn.Module):
     # Zero-initialize the last BN in each residual branch,
     # so that the residual branch starts with zeros, and each residual block behaves like an identity.
     # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
-    def __init__(self,in_channels,n_layers,n_features,depth,block_type,degrid,testrnn,cell_type,hidden_size,n_layers_rnn,rnn_gpu):
+    def __init__(self,in_channels,n_layers,n_features,depth,block_type,degrid,testrnn,cell_type,hidden_size,n_layers_rnn,rnn_gpu,**kwargs):
         #N input_channels,C channels,L length
         super(testcnn, self).__init__()
         factor=1.41
@@ -311,7 +311,7 @@ class testcnn(torch.nn.Module):
         if cell_type=='biDRNN':
             self.rnn = biDRNN(n_input=cnn_output_channels,n_hidden=hidden_size,n_layers=n_layers_rnn ,cell_type='GRU', batch_first=True,rnn_gpu= rnn_gpu)
         self.prelayer=res(in_channels=in_channels,n_layers=n_layers,n_features=n_features,init_ker_size=7,\
-              block_type=block_type,depth=depth,zero_init=True,degrid=degrid,tail=False)
+              block_type=block_type,depth=depth,zero_init=True,degrid=degrid,tail=False,**kwargs)
         self.avdpool_cnn=AdaptiveAvgPool1d(1)
         self.fc_cnn = Linear(cnn_output_channels, 1)
         self.timedistributed_rnn=Linear(cnn_output_len,1)
@@ -412,7 +412,7 @@ class SeqDataset(Dataset):
             n_channels = 4
             self.dfx=[]
             self.dfy=[]
-            for i in range(1000*np):
+            for i in range(10):
                 x = np.zeros((  n_channels,n_seq ) )
                 J = np.random.choice(n_channels, n_seq)
                 x[J , np.arange(n_seq)] = 1
