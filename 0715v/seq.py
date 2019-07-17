@@ -186,8 +186,8 @@ class branch0(torch.nn.Module):  #densenet multibranch
         #input in_channels
         #output out_channels ,other dimension does not change
         super(branch0, self).__init__()
-        if int(in_channels/splits)<=2:
-            raise ValueError('in_channels/splits should be at least 3 ')
+        if int(in_channels/splits)<1:
+            raise ValueError('in_channels/splits should be at least 1 ')
         inter_channels=int(in_channels/splits)
         self.cv1=conv1(in_channels,inter_channels)
         self.bn2=BatchNorm1d(inter_channels)
