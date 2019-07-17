@@ -74,4 +74,3 @@ torch.unsqueeze(ao,2).size()
 chartoidx(ao,'ATCGB.A.A.').transpose(0,1)
     
  '''
- 
